@@ -26,11 +26,12 @@ model User {
   teacherProfile Teacher?
   parentProfile  Parent?
 
-  announcements  Announcement[]
-  notifications  Notification[]
-  issueResponses IssueResponse[]
-  auditLogs      AuditLog[]
-passwordResetTokens PasswordResetToken[]
+  announcements       Announcement[]
+  notifications       Notification[]
+  issueResponses      IssueResponse[]
+  auditLogs           AuditLog[]
+  passwordResetTokens PasswordResetToken[]
+
   @@map("users")
 }
 
@@ -38,7 +39,7 @@ model PasswordResetToken {
   id        String    @id @default(cuid())
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  code      String    // 6-digit OTP, not a long random token anymore
+  code      String // 6-digit OTP, not a long random token anymore
   attempts  Int       @default(0)
   expiresAt DateTime
   usedAt    DateTime?
@@ -101,9 +102,9 @@ model Student {
   classId     String
   class       Class  @relation(fields: [classId], references: [id])
 
-  parents   ParentStudent[]
-  results   Result[]
-  createdAt DateTime        @default(now())
+  parents     ParentStudent[]
+  resultCards ResultCard[]
+  createdAt   DateTime        @default(now())
 
   @@map("students")
 }
@@ -124,7 +125,7 @@ model Exam {
   startDate    DateTime
   endDate      DateTime
 
-  results Result[]
+  resultCards ResultCard[]
 
   createdAt DateTime @default(now())
 
@@ -147,30 +148,24 @@ enum ResultStatus {
 }
 
 model Result {
-  id        String  @id @default(cuid())
-  studentId String
-  student   Student @relation(fields: [studentId], references: [id])
+  id           String     @id @default(cuid())
+  resultCardId String
+  resultCard   ResultCard @relation(fields: [resultCardId], references: [id], onDelete: Cascade)
+
   subjectId String
   subject   Subject @relation(fields: [subjectId], references: [id])
-  examId    String
-  exam      Exam    @relation(fields: [examId], references: [id])
 
   marksObtained Float
   maxMarks      Float   @default(100)
   grade         String?
 
-  status ResultStatus @default(DRAFT)
-
   enteredById String
   enteredBy   Teacher @relation(fields: [enteredById], references: [id])
-
-  publishedAt DateTime?
-  isLocked    Boolean   @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([studentId, subjectId, examId])
+  @@unique([resultCardId, subjectId])
   @@map("results")
 }
 
@@ -280,4 +275,25 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@map("audit_logs")
+}
+
+model ResultCard {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+  examId    String
+  exam      Exam    @relation(fields: [examId], references: [id])
+
+  status      ResultStatus @default(DRAFT)
+  remarks     String? // teacher's overall remarks for this report card
+  publishedAt DateTime?
+  isLocked    Boolean      @default(false)
+
+  results Result[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, examId])
+  @@map("result_cards")
 }

@@ -5,7 +5,7 @@ export default async function AdminDashboard() {
     await Promise.all([
       prisma.user.count(),
       prisma.student.count(),
-      prisma.result.count({ where: { status: "DRAFT" } }),
+     prisma.resultCard.count({ where: { status: "DRAFT" } }),
       prisma.parentIssue.count({ where: { status: "OPEN" } }),
     ]);
 
