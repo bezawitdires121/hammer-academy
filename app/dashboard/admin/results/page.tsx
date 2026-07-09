@@ -6,9 +6,8 @@ export default async function AdminResultsPage() {
     include: { student: true, subject: true, exam: true, enteredBy: true },
     orderBy: { createdAt: "desc" },
   });
-
-  const drafts = results.filter((r) => r.status === "DRAFT");
-  const published = results.filter((r) => r.status === "PUBLISHED");
+const drafts = results.filter((r: (typeof results)[number]) => r.status === "DRAFT");
+  const published = results.filter((r: (typeof results)[number]) => r.status === "PUBLISHED");
 
   return (
     <div className="space-y-10">
