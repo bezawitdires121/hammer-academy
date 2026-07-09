@@ -6,8 +6,13 @@ export default async function AdminResultsPage() {
     include: { student: true, subject: true, exam: true, enteredBy: true },
     orderBy: { createdAt: "desc" },
   });
-const drafts = results.filter((r: (typeof results)[number]) => r.status === "DRAFT");
-  const published = results.filter((r: (typeof results)[number]) => r.status === "PUBLISHED");
+
+  // Defined once here, reused below — avoids TypeScript losing track of the
+  // type every time we .filter() or .map() this data again.
+  type ResultRow = (typeof results)[number];
+
+  const drafts = results.filter((r: ResultRow) => r.status === "DRAFT");
+  const published = results.filter((r: ResultRow) => r.status === "PUBLISHED");
 
   return (
     <div className="space-y-10">
@@ -33,7 +38,7 @@ const drafts = results.filter((r: (typeof results)[number]) => r.status === "DRA
               </tr>
             </thead>
             <tbody>
-              {drafts.map((r) => (
+              {drafts.map((r: ResultRow) => (
                 <tr key={r.id} className="border-b">
                   <td className="py-2">{r.student.fullName}</td>
                   <td>{r.subject.name}</td>
@@ -71,7 +76,7 @@ const drafts = results.filter((r: (typeof results)[number]) => r.status === "DRA
               </tr>
             </thead>
             <tbody>
-              {published.map((r) => (
+              {published.map((r: ResultRow) => (
                 <tr key={r.id} className="border-b">
                   <td className="py-2">{r.student.fullName}</td>
                   <td>{r.subject.name}</td>
