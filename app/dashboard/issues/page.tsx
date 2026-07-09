@@ -34,7 +34,7 @@ export default async function IssuesPage() {
           {issues.length === 0 ? (
             <p className="text-sm text-gray-500">No messages yet.</p>
           ) : (
-            issues.map((issue) => (
+            issues.map((issue: { id: string; message: string; createdAt: Date; status: string; response: { message: string } | null }) => (
               <div key={issue.id} className="rounded-lg border bg-white p-4">
                 <p className="text-sm text-gray-900">{issue.message}</p>
                 <p className="mt-1 text-xs text-gray-400">
@@ -63,8 +63,8 @@ export default async function IssuesPage() {
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
   });
 
-  const open = issues.filter((i) => i.status === "OPEN");
-  const responded = issues.filter((i) => i.status === "RESPONDED");
+  const open = issues.filter((i: { status: string }) => i.status === "OPEN");
+  const responded = issues.filter((i: { status: string }) => i.status === "RESPONDED");
 
   return (
     <div className="space-y-8">
@@ -76,7 +76,7 @@ export default async function IssuesPage() {
           <p className="text-sm text-gray-500">No open issues.</p>
         ) : (
           <div className="space-y-4">
-            {open.map((issue) => (
+            {open.map((issue: { id: string; parent: { fullName: string }; message: string; createdAt: Date; response: { message: string } | null }) => (
               <div key={issue.id} className="rounded border p-3">
                 <p className="text-sm font-medium text-gray-900">{issue.parent.fullName}</p>
                 <p className="mt-1 text-sm text-gray-700">{issue.message}</p>
@@ -94,7 +94,7 @@ export default async function IssuesPage() {
           <p className="text-sm text-gray-500">No responded issues yet.</p>
         ) : (
           <div className="space-y-4">
-            {responded.map((issue) => (
+            {responded.map((issue: { id: string; parent: { fullName: string }; message: string; createdAt: Date; response: { message: string } | null }) => (
               <div key={issue.id} className="rounded border p-3">
                 <p className="text-sm font-medium text-gray-900">{issue.parent.fullName}</p>
                 <p className="mt-1 text-sm text-gray-700">{issue.message}</p>

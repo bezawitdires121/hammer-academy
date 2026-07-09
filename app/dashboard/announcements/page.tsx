@@ -18,8 +18,8 @@ export default async function AnnouncementsPage() {
       include: { students: { include: { student: { include: { class: true } } } } },
     });
 
-    const childClassIds = parentProfile?.students.map((ps) => ps.student.classId) ?? [];
-    const childGrades = parentProfile?.students.map((ps) => ps.student.class.grade) ?? [];
+    const childClassIds = parentProfile?.students.map((ps: { student: { classId: string } }) => ps.student.classId) ?? [];
+    const childGrades = parentProfile?.students.map((ps: { student: { class: { grade: number } } }) => ps.student.class.grade) ?? [];
 
     announcements = await prisma.announcement.findMany({
       where: {
@@ -46,7 +46,7 @@ export default async function AnnouncementsPage() {
       {(role === "ADMIN" || role === "TEACHER") && (
         <section className="rounded-lg border bg-white p-6">
           <h2 className="mb-4 font-medium text-gray-900">Post New Announcement</h2>
-          <AnnouncementForm classes={classes.map((c) => ({ id: c.id, name: c.name }))} />
+          <AnnouncementForm classes={classes.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name }))} />
         </section>
       )}
 
@@ -54,7 +54,7 @@ export default async function AnnouncementsPage() {
         {announcements.length === 0 ? (
           <p className="text-gray-500">No announcements yet.</p>
         ) : (
-          announcements.map((a) => (
+          announcements.map((a: { id: string; title: string; body: string; priority: boolean; createdAt: Date; scope: string }) => (
             <div
               key={a.id}
               className={`rounded-lg border p-4 ${

@@ -31,7 +31,7 @@ export default function ClassForm({ teachers }: { teachers: { id: string; fullNa
       <input name="grade" type="number" min={1} max={5} placeholder="Grade (1-5)" required className="rounded border px-3 py-2" />
       <select name="teacherId" className="rounded border px-3 py-2">
         <option value="">No teacher assigned yet</option>
-        {teachers.map((t) => (
+        {teachers.map((t: { id: string; fullName: string }) => (
           <option key={t.id} value={t.id}>{t.fullName}</option>
         ))}
       </select>

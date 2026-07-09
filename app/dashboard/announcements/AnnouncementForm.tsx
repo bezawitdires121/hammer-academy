@@ -49,7 +49,7 @@ export default function AnnouncementForm({
       {scope === "GRADE" && (
         <select name="grade" required className="rounded border px-3 py-2">
           <option value="">Select grade</option>
-          {[1, 2, 3, 4, 5].map((g) => (
+          {[1, 2, 3, 4, 5].map((g: number) => (
             <option key={g} value={g}>Grade {g}</option>
           ))}
         </select>
@@ -58,7 +58,7 @@ export default function AnnouncementForm({
       {scope === "CLASS" && (
         <select name="classId" required className="rounded border px-3 py-2">
           <option value="">Select class</option>
-          {classes.map((c) => (
+          {classes.map((c: { id: string; name: string }) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>

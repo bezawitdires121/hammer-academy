@@ -52,7 +52,7 @@ export default function ClassTeacherRow({
           className="rounded border px-2 py-1 text-sm"
         >
           <option value="">Unassigned</option>
-          {teachers.map((t) => (
+          {teachers.map((t: { id: string; fullName: string }) => (
             <option key={t.id} value={t.id}>{t.fullName}</option>
           ))}
         </select>

@@ -70,7 +70,7 @@ export default function StudentRow({
           onChange={(e) => setClassId(e.target.value)}
           className="rounded border px-2 py-1 text-sm"
         >
-          {classes.map((c) => (
+          {classes.map((c: { id: string; name: string }) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>

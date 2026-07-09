@@ -37,13 +37,13 @@ export default function StudentForm({
       <input name="admissionNo" placeholder="Admission number" required className="rounded border px-3 py-2" />
       <select name="classId" required className="rounded border px-3 py-2">
         <option value="">Select class</option>
-        {classes.map((c) => (
+        {classes.map((c: { id: string; name: string }) => (
           <option key={c.id} value={c.id}>{c.name}</option>
         ))}
       </select>
       <select name="parentId" required className="rounded border px-3 py-2">
         <option value="">Select parent</option>
-        {parents.map((p) => (
+        {parents.map((p: { id: string; fullName: string }) => (
           <option key={p.id} value={p.id}>{p.fullName}</option>
         ))}
       </select>

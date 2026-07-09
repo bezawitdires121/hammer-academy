@@ -26,7 +26,7 @@ export default async function ParentDashboard() {
     },
   });
 
-  const children = parentProfile?.students.map((ps) => ps.student) ?? [];
+  const children = parentProfile?.students.map((ps: { student: { id: string; fullName: string; class: { name: string; grade: number }; admissionNo: string; results: Array<{ id: string; subject: { name: string }; exam: { name: string }; marksObtained: number; maxMarks: number; grade: string | null }> } }) => ps.student) ?? [];
 
   return (
     <div className="space-y-8">
@@ -39,7 +39,7 @@ export default async function ParentDashboard() {
           No children are linked to your account yet. Contact the school office if this seems wrong.
         </p>
       ) : (
-        children.map((child) => (
+        children.map((child: { id: string; fullName: string; class: { name: string; grade: number }; admissionNo: string; results: Array<{ id: string; subject: { name: string }; exam: { name: string }; marksObtained: number; maxMarks: number; grade: string | null }> }) => (
           <section key={child.id} className="rounded-lg border bg-white p-6">
             <h2 className="mb-1 font-medium text-gray-900">
               {child.fullName}
@@ -63,7 +63,7 @@ export default async function ParentDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {child.results.map((r) => (
+                  {child.results.map((r: { id: string; subject: { name: string }; exam: { name: string }; marksObtained: number; maxMarks: number; grade: string | null }) => (
                     <tr key={r.id} className="border-b">
                       <td className="py-2">{r.subject.name}</td>
                       <td>{r.exam.name}</td>

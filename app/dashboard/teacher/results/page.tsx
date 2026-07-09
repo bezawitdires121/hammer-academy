@@ -10,12 +10,12 @@ export default async function TeacherResultsPage() {
     include: { classes: { include: { students: true } } },
   });
 
-  const students = teacherProfile?.classes.flatMap((c) => c.students) ?? [];
+  const students = teacherProfile?.classes.flatMap((c: { students: Array<{ id: string; fullName: string }> }) => c.students) ?? [];
   const subjects = await prisma.subject.findMany();
   const exams = await prisma.exam.findMany();
 
   const existingResults = await prisma.result.findMany({
-    where: { studentId: { in: students.map((s) => s.id) } },
+    where: { studentId: { in: students.map((s: { id: string }) => s.id) } },
     include: { student: true, subject: true, exam: true },
     orderBy: { createdAt: "desc" },
   });
@@ -31,9 +31,9 @@ export default async function TeacherResultsPage() {
       ) : (
         <section className="rounded-lg border bg-white p-6">
           <ResultForm
-            students={students.map((s) => ({ id: s.id, fullName: s.fullName }))}
-            subjects={subjects.map((s) => ({ id: s.id, name: s.name }))}
-            exams={exams.map((e) => ({ id: e.id, name: e.name }))}
+            students={students.map((s: { id: string; fullName: string }) => ({ id: s.id, fullName: s.fullName }))}
+            subjects={subjects.map((s: { id: string; name: string }) => ({ id: s.id, name: s.name }))}
+            exams={exams.map((e: { id: string; name: string }) => ({ id: e.id, name: e.name }))}
           />
         </section>
       )}
@@ -52,7 +52,7 @@ export default async function TeacherResultsPage() {
             </tr>
           </thead>
           <tbody>
-            {existingResults.map((r) => (
+            {existingResults.map((r: { id: string; student: { fullName: string }; subject: { name: string }; exam: { name: string }; marksObtained: number; maxMarks: number; grade: string | null; status: string }) => (
               <tr key={r.id} className="border-b">
                 <td className="py-2">{r.student.fullName}</td>
                 <td>{r.subject.name}</td>

@@ -37,19 +37,19 @@ export default function ResultForm({
       )}
       <select name="studentId" required className="rounded border px-3 py-2">
         <option value="">Select student</option>
-        {students.map((s) => (
+        {students.map((s: { id: string; fullName: string }) => (
           <option key={s.id} value={s.id}>{s.fullName}</option>
         ))}
       </select>
       <select name="subjectId" required className="rounded border px-3 py-2">
         <option value="">Select subject</option>
-        {subjects.map((s) => (
+        {subjects.map((s: { id: string; name: string }) => (
           <option key={s.id} value={s.id}>{s.name}</option>
         ))}
       </select>
       <select name="examId" required className="rounded border px-3 py-2">
         <option value="">Select exam</option>
-        {exams.map((e) => (
+        {exams.map((e: { id: string; name: string }) => (
           <option key={e.id} value={e.id}>{e.name}</option>
         ))}
       </select>
