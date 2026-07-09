@@ -1,0 +1,283 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  PARENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  adminProfile   Admin?
+  teacherProfile Teacher?
+  parentProfile  Parent?
+
+  announcements  Announcement[]
+  notifications  Notification[]
+  issueResponses IssueResponse[]
+  auditLogs      AuditLog[]
+passwordResetTokens PasswordResetToken[]
+  @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String    // 6-digit OTP, not a long random token anymore
+  attempts  Int       @default(0)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("password_reset_tokens")
+}
+
+model Admin {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName String
+
+  @@map("admins")
+}
+
+model Teacher {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName String
+
+  classes Class[]
+  results Result[]
+
+  @@map("teachers")
+}
+
+model Parent {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName String
+
+  students     ParentStudent[]
+  parentIssues ParentIssue[]
+
+  @@map("parents")
+}
+
+model Class {
+  id        String   @id @default(cuid())
+  name      String
+  grade     Int
+  teacherId String?
+  teacher   Teacher? @relation(fields: [teacherId], references: [id])
+
+  students      Student[]
+  announcements Announcement[]
+  createdAt     DateTime       @default(now())
+
+  @@map("classes")
+}
+
+model Student {
+  id          String @id @default(cuid())
+  fullName    String
+  admissionNo String @unique
+  classId     String
+  class       Class  @relation(fields: [classId], references: [id])
+
+  parents   ParentStudent[]
+  results   Result[]
+  createdAt DateTime        @default(now())
+
+  @@map("students")
+}
+
+model Subject {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  results Result[]
+
+  @@map("subjects")
+}
+
+model Exam {
+  id           String   @id @default(cuid())
+  name         String
+  term         String
+  academicYear String
+  startDate    DateTime
+  endDate      DateTime
+
+  results Result[]
+
+  createdAt DateTime @default(now())
+
+  @@map("exams")
+}
+
+model ParentStudent {
+  parentId  String
+  studentId String
+  parent    Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([parentId, studentId])
+  @@map("parent_students")
+}
+
+enum ResultStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Result {
+  id        String  @id @default(cuid())
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  examId    String
+  exam      Exam    @relation(fields: [examId], references: [id])
+
+  marksObtained Float
+  maxMarks      Float   @default(100)
+  grade         String?
+
+  status ResultStatus @default(DRAFT)
+
+  enteredById String
+  enteredBy   Teacher @relation(fields: [enteredById], references: [id])
+
+  publishedAt DateTime?
+  isLocked    Boolean   @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, subjectId, examId])
+  @@map("results")
+}
+
+enum NotificationChannel {
+  SMS
+  IN_APP
+  EMAIL
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum AnnouncementScope {
+  SCHOOL_WIDE
+  GRADE
+  CLASS
+}
+
+enum IssueStatus {
+  OPEN
+  RESPONDED
+}
+
+model Announcement {
+  id      String            @id @default(cuid())
+  title   String
+  body    String
+  scope   AnnouncementScope @default(SCHOOL_WIDE)
+  classId String?
+  class   Class?            @relation(fields: [classId], references: [id])
+  grade   Int?
+
+  priority     Boolean   @default(false)
+  scheduledFor DateTime?
+
+  createdById String
+  createdBy   User   @relation(fields: [createdById], references: [id])
+
+  createdAt     DateTime       @default(now())
+  notifications Notification[]
+
+  @@map("announcements")
+}
+
+model Notification {
+  id      String              @id @default(cuid())
+  userId  String
+  user    User                @relation(fields: [userId], references: [id])
+  channel NotificationChannel
+  status  NotificationStatus  @default(PENDING)
+
+  title   String
+  message String
+
+  announcementId String?
+  announcement   Announcement? @relation(fields: [announcementId], references: [id])
+
+  sentAt DateTime?
+  error  String?
+
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model ParentIssue {
+  id       String      @id @default(cuid())
+  parentId String
+  parent   Parent      @relation(fields: [parentId], references: [id])
+  message  String
+  status   IssueStatus @default(OPEN)
+
+  response IssueResponse?
+
+  createdAt DateTime @default(now())
+
+  @@map("parent_issues")
+}
+
+model IssueResponse {
+  id            String      @id @default(cuid())
+  parentIssueId String      @unique
+  parentIssue   ParentIssue @relation(fields: [parentIssueId], references: [id])
+
+  respondedById String
+  respondedBy   User   @relation(fields: [respondedById], references: [id])
+
+  message   String
+  createdAt DateTime @default(now())
+
+  @@map("issue_responses")
+}
+
+model AuditLog {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  action   String
+  entity   String
+  entityId String
+  metadata Json?
+
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
