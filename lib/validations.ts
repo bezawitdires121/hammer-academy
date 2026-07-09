@@ -75,3 +75,15 @@ export const toggleUserActiveSchema = z.object({
   userId: z.string().min(1),
   isActive: z.boolean(),
 });
+export const submitResultCardSchema = z.object({
+  studentId: z.string().min(1),
+  examId: z.string().min(1),
+  remarks: z.string().max(1000).optional(),
+  subjectMarks: z.array(
+    z.object({
+      subjectId: z.string().min(1),
+      marksObtained: z.number().min(0),
+      maxMarks: z.number().min(1),
+    })
+  ).min(1),
+});

@@ -58,10 +58,21 @@ export async function createAnnouncement(formData: FormData) {
     affectedParentUserIds = parents.map((p: { user: { id: string } }) => p.user.id);
   }
 
+ // Reserve space for the link first, then fit as much of the actual
+  // announcement as possible around it — guarantees the link is NEVER
+  // cut off, which was silently happening before this fix
+  const linkSuffix = ` More info: ${process.env.NEXT_PUBLIC_APP_URL}`;
+  const prefix = `${announcement.title}: `;
+  const maxBodyLength = 160 - prefix.length - linkSuffix.length;
+  const bodyPreview =
+    announcement.body.length > maxBodyLength
+      ? announcement.body.slice(0, Math.max(maxBodyLength - 3, 0)) + "..."
+      : announcement.body;
+
   await notifyMultipleUsers(
     affectedParentUserIds,
     announcement.title,
-    announcement.body,
+    `${prefix}${bodyPreview}${linkSuffix}`,
     announcement.id
   );
 
