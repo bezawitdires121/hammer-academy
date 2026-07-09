@@ -3,7 +3,8 @@
 import { useActionState } from "react";
 import { createStudent } from "./actions";
 
-const initialState = { error: undefined as string | undefined, success: false };
+type FormState = { error: string | undefined; success: boolean };
+const initialState: FormState = { error: undefined, success: false };
 
 export default function StudentForm({
   classes,
@@ -13,7 +14,7 @@ export default function StudentForm({
   parents: { id: string; fullName: string }[];
 }) {
   const [state, formAction, isPending] = useActionState(
-    async (_prevState: typeof initialState, formData: FormData) => {
+    async (_prevState: FormState, formData: FormData) => {
       const result = await createStudent(formData);
       return { error: result?.error, success: !!result?.success };
     },

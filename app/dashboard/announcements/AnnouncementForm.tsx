@@ -3,7 +3,8 @@
 import { useActionState, useState } from "react";
 import { createAnnouncement } from "./actions";
 
-const initialState = { error: undefined, success: false };
+type FormState = { error: string | undefined; success: boolean };
+const initialState: FormState = { error: undefined, success: false };
 
 export default function AnnouncementForm({
   classes,
@@ -12,7 +13,7 @@ export default function AnnouncementForm({
 }) {
   const [scope, setScope] = useState("SCHOOL_WIDE");
   const [state, formAction, isPending] = useActionState(
-    async (_prevState: typeof initialState, formData: FormData) => {
+    async (_prevState: FormState, formData: FormData) => {
       const result = await createAnnouncement(formData);
       return { error: result?.error, success: !!result?.success };
     },

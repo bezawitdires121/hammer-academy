@@ -36,7 +36,9 @@ export async function publishResult(resultId: string) {
     studentId: result.studentId,
   });
 
-  const parentUserIds = result.student.parents.map((ps) => ps.parent.user.id);
+ const parentUserIds = result.student.parents.map(
+    (ps: (typeof result.student.parents)[number]) => ps.parent.user.id
+  );
   await notifyMultipleUsers(
     parentUserIds,
     "New Result Published",

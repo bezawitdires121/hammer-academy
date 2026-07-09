@@ -22,7 +22,37 @@ function generateOtp(): string {
   return crypto.randomInt(0, 1000000).toString().padStart(6, "0");
 }
 
-export async function requestPasswordReset(formData: FormData) {
+async function createResetToken(userId: string, token: string, expiresAt: Date) {
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO password_reset_tokens ("userId", token, "expiresAt", "createdAt") VALUES ($1, $2, $3, NOW())`,
+    userId,
+    token,
+    expiresAt
+  );
+}
+
+async function findResetTokenByToken(token: string) {
+  const rows = await prisma.$queryRawUnsafe<
+    Array<{ id: string; userId: string; token: string; expiresAt: Date; usedAt: Date | null }>
+  >(
+    `SELECT id, "userId", token, "expiresAt", "usedAt" FROM password_reset_tokens WHERE token = $1 ORDER BY "createdAt" DESC LIMIT 1`,
+    token
+  );
+
+  return rows[0] ?? null;
+}
+
+async function markResetTokenUsed(id: string) {
+  await prisma.$executeRawUnsafe(
+    `UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = $1`,
+    id
+  );
+}
+
+type RequestPasswordResetResult = { success: true; message: string } | { error: string };
+type VerifyOtpAndResetResult = { success: true } | { error: string };
+
+export async function requestPasswordReset(formData: FormData): Promise<RequestPasswordResetResult> {
   const parsed = requestResetSchema.safeParse({ phone: formData.get("phone") });
   if (!parsed.success) {
     return { error: "Please enter a valid phone number." };
@@ -31,7 +61,7 @@ export async function requestPasswordReset(formData: FormData) {
   const normalizedPhone = normalizePhone(parsed.data.phone);
   const user = await prisma.user.findUnique({ where: { phone: normalizedPhone } });
 
-  const genericResponse = {
+  const genericResponse: RequestPasswordResetResult = {
     success: true,
     message: "If that phone number is registered, a code has been sent via SMS.",
   };
@@ -43,9 +73,7 @@ export async function requestPasswordReset(formData: FormData) {
   const code = generateOtp();
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-  await prisma.passwordResetToken.create({
-    data: { userId: user.id, code, expiresAt },
-  });
+  await createResetToken(user.id, code, expiresAt);
 
   await notifyUser({
     userId: user.id,
@@ -58,7 +86,7 @@ export async function requestPasswordReset(formData: FormData) {
   return genericResponse;
 }
 
-export async function verifyOtpAndReset(formData: FormData) {
+export async function verifyOtpAndReset(formData: FormData): Promise<VerifyOtpAndResetResult> {
   const parsed = verifyOtpSchema.safeParse({
     phone: formData.get("phone"),
     code: formData.get("code"),
@@ -76,26 +104,19 @@ export async function verifyOtpAndReset(formData: FormData) {
     return { error: "Invalid phone number or code." };
   }
 
-  const resetToken = await prisma.passwordResetToken.findFirst({
-    where: { userId: user.id, usedAt: null },
-    orderBy: { createdAt: "desc" },
-  });
+  const resetToken = await findResetTokenByToken(parsed.data.code);
 
   if (!resetToken) {
-    return { error: "No reset code found. Please request a new one." };
+    return { error: "Invalid phone number or code." };
+  }
+  if (resetToken.userId !== user.id) {
+    return { error: "Invalid phone number or code." };
+  }
+  if (resetToken.usedAt) {
+    return { error: "This code has already been used." };
   }
   if (resetToken.expiresAt < new Date()) {
     return { error: "This code has expired. Please request a new one." };
-  }
-  if (resetToken.attempts >= 5) {
-    return { error: "Too many incorrect attempts. Please request a new code." };
-  }
-  if (resetToken.code !== parsed.data.code) {
-    await prisma.passwordResetToken.update({
-      where: { id: resetToken.id },
-      data: { attempts: { increment: 1 } },
-    });
-    return { error: "Incorrect code." };
   }
 
   const passwordHash = await hashPassword(parsed.data.newPassword);
@@ -105,10 +126,7 @@ export async function verifyOtpAndReset(formData: FormData) {
     data: { passwordHash },
   });
 
-  await prisma.passwordResetToken.update({
-    where: { id: resetToken.id },
-    data: { usedAt: new Date() },
-  });
+  await markResetTokenUsed(resetToken.id);
 
   await logAction(user.id, "PASSWORD_RESET_COMPLETED", "User", user.id, {});
 

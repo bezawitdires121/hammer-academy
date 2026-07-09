@@ -21,7 +21,9 @@ export default function ResetPasswordPage() {
     formData.set("phone", phone);
     const result = await requestPasswordReset(formData);
     setIsPending(false);
-    if (result.message) setMessage(result.message);
+    if ("message" in result && result.message) {
+      setMessage(result.message);
+    }
     setStep("verify");
   }
 
@@ -35,7 +37,7 @@ export default function ResetPasswordPage() {
     formData.set("newPassword", newPassword);
     const result = await verifyOtpAndReset(formData);
     setIsPending(false);
-    if (result.error) {
+    if ("error" in result) {
       setError(result.error);
       return;
     }

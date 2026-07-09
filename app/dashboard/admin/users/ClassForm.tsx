@@ -3,11 +3,12 @@
 import { useActionState } from "react";
 import { createClass } from "./actions";
 
-const initialState: { error: string | undefined; success: boolean } = { error: undefined, success: false };
+type FormState = { error: string | undefined; success: boolean };
+const initialState: FormState = { error: undefined, success: false };
 
 export default function ClassForm({ teachers }: { teachers: { id: string; fullName: string }[] }) {
   const [state, formAction, isPending] = useActionState(
-    async (_prevState: typeof initialState, formData: FormData) => {
+    async (_prevState: FormState, formData: FormData) => {
       const result = await createClass(formData);
       return { error: result?.error, success: !!result?.success };
     },
