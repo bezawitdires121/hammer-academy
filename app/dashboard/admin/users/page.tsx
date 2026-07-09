@@ -7,17 +7,27 @@ import ClassTeacherRow from "./ClassTeacherRow";
 import StudentRow from "./StudentRow";
 import ActiveToggle from "./ActiveToggle";
 
+type TeacherRecord = { id: string; fullName: string; user: { id: string; email: string; isActive: boolean } };
+type ParentRecord = { id: string; fullName: string; user: { id: string; email: string; isActive: boolean } };
+type ClassRecord = { id: string; name: string; grade: number; teacherId: string | null };
+type StudentRecord = { id: string; fullName: string; admissionNo: string; classId: string; createdAt: Date };
+
 export default async function AdminUsersPage() {
-  const [teachers, parents, classes, students] = await Promise.all([
+  const [teachersResult, parentsResult, classesResult, studentsResult] = await Promise.all([
     prisma.teacher.findMany({ include: { user: true } }),
     prisma.parent.findMany({ include: { user: true } }),
     prisma.class.findMany(),
     prisma.student.findMany(),
   ]);
 
-  const teacherOptions = teachers.map((t) => ({ id: t.id, fullName: t.fullName }));
-  const parentOptions = parents.map((p) => ({ id: p.id, fullName: p.fullName }));
-  const classOptions = classes.map((c) => ({ id: c.id, name: c.name }));
+  const teachers = teachersResult as TeacherRecord[];
+  const parents = parentsResult as ParentRecord[];
+  const classes = classesResult as ClassRecord[];
+  const students = studentsResult as StudentRecord[];
+
+  const teacherOptions = teachers.map((t: TeacherRecord) => ({ id: t.id, fullName: t.fullName }));
+  const parentOptions = parents.map((p: ParentRecord) => ({ id: p.id, fullName: p.fullName }));
+  const classOptions = classes.map((c: ClassRecord) => ({ id: c.id, name: c.name }));
 
   return (
     <div className="space-y-10">
