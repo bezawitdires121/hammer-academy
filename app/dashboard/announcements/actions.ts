@@ -43,19 +43,19 @@ export async function createAnnouncement(formData: FormData) {
 
   if (parsed.data.scope === "SCHOOL_WIDE") {
     const allParents = await prisma.parent.findMany({ include: { user: true } });
-    affectedParentUserIds = allParents.map((p) => p.user.id);
+    affectedParentUserIds = allParents.map((p: { user: { id: string } }) => p.user.id);
   } else if (parsed.data.scope === "GRADE") {
     const parents = await prisma.parent.findMany({
       where: { students: { some: { student: { class: { grade: parsed.data.grade } } } } },
       include: { user: true },
     });
-    affectedParentUserIds = parents.map((p) => p.user.id);
+    affectedParentUserIds = parents.map((p: { user: { id: string } }) => p.user.id);
   } else if (parsed.data.scope === "CLASS") {
     const parents = await prisma.parent.findMany({
       where: { students: { some: { student: { classId: parsed.data.classId } } } },
       include: { user: true },
     });
-    affectedParentUserIds = parents.map((p) => p.user.id);
+    affectedParentUserIds = parents.map((p: { user: { id: string } }) => p.user.id);
   }
 
   await notifyMultipleUsers(
