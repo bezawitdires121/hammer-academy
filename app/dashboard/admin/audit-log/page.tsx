@@ -26,7 +26,7 @@ export default async function AuditLogPage() {
             </tr>
           </thead>
           <tbody>
-            {logs.map((log) => (
+            {logs.map((log: (typeof logs)[number]) => (
               <tr key={log.id} className="border-b">
                 <td className="px-4 py-2 whitespace-nowrap text-gray-500">
                   {log.createdAt.toLocaleString()}
