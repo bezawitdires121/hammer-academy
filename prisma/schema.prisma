@@ -63,8 +63,9 @@ model Teacher {
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   fullName String
 
-  classes Class[]
-  results Result[]
+  classes            Class[]
+  results            Result[]
+  subjectAssignments ClassSubjectTeacher[]
 
   @@map("teachers")
 }
@@ -88,9 +89,10 @@ model Class {
   teacherId String?
   teacher   Teacher? @relation(fields: [teacherId], references: [id])
 
-  students      Student[]
-  announcements Announcement[]
-  createdAt     DateTime       @default(now())
+  students           Student[]
+  announcements      Announcement[]
+  subjectAssignments ClassSubjectTeacher[]
+  createdAt          DateTime              @default(now())
 
   @@map("classes")
 }
@@ -110,9 +112,10 @@ model Student {
 }
 
 model Subject {
-  id      String   @id @default(cuid())
-  name    String   @unique
-  results Result[]
+  id               String                @id @default(cuid())
+  name             String                @unique
+  results          Result[]
+  classAssignments ClassSubjectTeacher[]
 
   @@map("subjects")
 }
@@ -296,4 +299,17 @@ model ResultCard {
 
   @@unique([studentId, examId])
   @@map("result_cards")
+}
+
+model ClassSubjectTeacher {
+  id        String  @id @default(cuid())
+  classId   String
+  class     Class   @relation(fields: [classId], references: [id])
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  teacherId String
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+
+  @@unique([classId, subjectId])
+  @@map("class_subject_teachers")
 }
