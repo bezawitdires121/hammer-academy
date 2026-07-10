@@ -26,7 +26,7 @@ Since the dashboards are behind authentication, here's what each role actually e
 
 ## Parent
 
-- Sees only their own child's (or children's) *published* results — drafts are never visible, enforced at the database query level, not just hidden in the UI
+- Sees only their own child's (or children's) *published* results : drafts are never visible, enforced at the database query level, not just hidden in the UI
 - Each child gets a separate section showing subject-by-subject marks, grade, overall average, and teacher remarks for each exam
 - Receives school announcements relevant to their child's grade/class, plus school-wide ones
 - Can submit questions or concerns directly to the school and gets notified when the school responds
