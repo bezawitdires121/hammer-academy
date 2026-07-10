@@ -6,6 +6,7 @@ import StudentForm from "./StudentForm";
 import ClassTeacherRow from "./ClassTeacherRow";
 import StudentRow from "./StudentRow";
 import ActiveToggle from "./ActiveToggle";
+import SubjectTeacherGrid from "./SubjectTeacherGrid";
 
 type TeacherRecord = { id: string; fullName: string; user: { id: string; email: string; isActive: boolean } };
 type ParentRecord = { id: string; fullName: string; user: { id: string; email: string; isActive: boolean } };
@@ -84,6 +85,19 @@ export default async function AdminUsersPage() {
             <StudentRow key={s.id} student={s} classes={classOptions} />
           ))}
         </ul>
+      </section>
+      <section className="rounded-lg border bg-white p-6">
+        <h2 className="mb-4 font-medium text-gray-900">Subject Teacher Assignments</h2>
+        <SubjectTeacherGrid
+          classes={classOptions}
+          subjects={await prisma.subject.findMany().then((subs) =>
+            subs.map((s) => ({ id: s.id, name: s.name }))
+          )}
+          teachers={teacherOptions}
+          assignments={await prisma.classSubjectTeacher.findMany().then((rows) =>
+            rows.map((r) => ({ classId: r.classId, subjectId: r.subjectId, teacherId: r.teacherId }))
+          )}
+        />
       </section>
     </div>
   );

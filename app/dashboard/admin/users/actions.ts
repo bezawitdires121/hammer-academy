@@ -271,3 +271,36 @@ export async function toggleUserActive(formData: FormData) {
   revalidatePath("/dashboard/admin/users");
   return { success: true };
 }
+export async function assignSubjectTeacher(formData: FormData) {
+  const admin = await requireRole(["ADMIN"]);
+
+  const classId = formData.get("classId") as string;
+  const subjectId = formData.get("subjectId") as string;
+  const teacherId = formData.get("teacherId") as string;
+
+  if (!classId || !subjectId) {
+    return { error: "Class and subject are required." };
+  }
+
+  if (!teacherId) {
+    // Empty selection means "unassign" — delete the row if it exists
+    await prisma.classSubjectTeacher.deleteMany({ where: { classId, subjectId } });
+    await logAction(admin.id, "SUBJECT_TEACHER_UNASSIGNED", "Class", classId, { subjectId });
+    revalidatePath("/dashboard/admin/users");
+    return { success: true };
+  }
+
+  await prisma.classSubjectTeacher.upsert({
+    where: { classId_subjectId: { classId, subjectId } },
+    update: { teacherId },
+    create: { classId, subjectId, teacherId },
+  });
+
+  await logAction(admin.id, "SUBJECT_TEACHER_ASSIGNED", "Class", classId, {
+    subjectId,
+    teacherId,
+  });
+
+  revalidatePath("/dashboard/admin/users");
+  return { success: true };
+}

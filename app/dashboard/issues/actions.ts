@@ -74,7 +74,7 @@ export async function respondToIssue(formData: FormData) {
   await logAction(user.id, "ISSUE_RESPONDED", "ParentIssue", issueId, {});
 
   // Mandatory notification per your spec: "Parent issues must always get a response"
-  const linkSuffix = ` Full response: ${process.env.NEXT_PUBLIC_APP_URL}`;
+  const linkSuffix = ` Full response: ${process.env.NEXT_PUBLIC_APP_URL}/dashboard/issues`;
   const prefix = `School responded: `;
   const maxResponseLength = 160 - prefix.length - linkSuffix.length;
   const responsePreview =

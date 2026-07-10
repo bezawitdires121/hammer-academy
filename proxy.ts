@@ -7,9 +7,10 @@ export default auth((req) => {
 
   const isLoggedIn = !!session?.user;
   const role = session?.user?.role;
-
-  if (!isLoggedIn && pathname.startsWith("/dashboard")) {
-    return NextResponse.redirect(new URL("/login", req.url));
+if (!isLoggedIn && pathname.startsWith("/dashboard")) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   if (isLoggedIn) {

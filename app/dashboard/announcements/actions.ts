@@ -61,7 +61,7 @@ export async function createAnnouncement(formData: FormData) {
  // Reserve space for the link first, then fit as much of the actual
   // announcement as possible around it — guarantees the link is NEVER
   // cut off, which was silently happening before this fix
-  const linkSuffix = ` More info: ${process.env.NEXT_PUBLIC_APP_URL}`;
+const linkSuffix = ` More info: ${process.env.NEXT_PUBLIC_APP_URL}/dashboard/announcements`;
   const prefix = `${announcement.title}: `;
   const maxBodyLength = 160 - prefix.length - linkSuffix.length;
   const bodyPreview =

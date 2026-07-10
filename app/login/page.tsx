@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { checkRateLimit } from "./actions";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl");
 
  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,7 +39,11 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    // Only allow redirecting to paths within our own app — never an
+    // external URL, which would otherwise be an open-redirect vulnerability
+    const safeDestination =
+      callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/dashboard";
+    router.push(safeDestination);
     router.refresh();
   }
 
@@ -95,5 +101,12 @@ export default function LoginPage() {
         </a>
       </form>
     </div>
+  );
+}
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   );
 }
