@@ -12,6 +12,9 @@ export async function createHomeroomAnnouncement(
 
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
+  const semesterId = String(
+    formData.get("semesterId") ?? ""
+  ).trim();
 
   if (!title) {
     return {
@@ -63,10 +66,10 @@ export async function createHomeroomAnnouncement(
     };
   }
 
-  const currentSemester = await prisma.semester.findFirst({
+  const selectedSemester = await prisma.semester.findFirst({
     where: {
+      id: semesterId,
       schoolYearId: section.schoolYearId,
-      isCurrent: true,
     },
     select: {
       id: true,
@@ -74,14 +77,14 @@ export async function createHomeroomAnnouncement(
     },
   });
 
-  if (!currentSemester) {
+  if (!selectedSemester) {
     return {
       success: false,
-      error: "No current semester is configured for this school year.",
+      error: "Semester not found for this school year.",
     };
   }
 
-  if (currentSemester.isLocked) {
+  if (selectedSemester.isLocked) {
     return {
       success: false,
       error: "This semester is locked. Announcements cannot be created.",
@@ -94,7 +97,7 @@ export async function createHomeroomAnnouncement(
       scope: "SECTION",
       sectionId: section.id,
       schoolYearId: section.schoolYearId,
-      semesterId: currentSemester.id,
+      semesterId: selectedSemester.id,
       createdById: session.user.id,
     },
   });
@@ -102,11 +105,13 @@ export async function createHomeroomAnnouncement(
   revalidatePath(
     `/dashboard/teacher/homeroom/${sectionId}`
   );
+  revalidatePath("/dashboard/announcements");
 
   return {
     success: true,
   };
 }
+
 
 
 

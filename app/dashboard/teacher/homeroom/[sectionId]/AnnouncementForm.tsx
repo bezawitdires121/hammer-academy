@@ -8,12 +8,14 @@ import { Megaphone, Send, X } from "lucide-react";
 type Props = {
   sectionId: string;
   sectionName: string;
+  semesterId: string | null;
   isLocked: boolean;
 };
 
 export default function AnnouncementForm({
   sectionId,
   sectionName,
+  semesterId,
   isLocked,
 }: Props) {
   const router = useRouter();
@@ -93,7 +95,12 @@ export default function AnnouncementForm({
         onSubmit={handleSubmit}
         className="space-y-5 p-5"
       >
-        {error && (
+                <input
+          type="hidden"
+          name="semesterId"
+          value={semesterId ?? ""}
+        />
+{error && (
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
@@ -163,6 +170,7 @@ export default function AnnouncementForm({
     </div>
   );
 }
+
 
 
 

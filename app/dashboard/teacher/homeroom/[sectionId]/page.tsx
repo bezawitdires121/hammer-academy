@@ -14,7 +14,7 @@ import {
 
 type Props = {
   params: Promise<{ sectionId: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; semesterId?: string }>;
 };
 
 export default async function HomeroomSectionPage({
@@ -24,7 +24,7 @@ export default async function HomeroomSectionPage({
   const session = await requireTeacher();
 
   const { sectionId } = await params;
-  const { tab } = await searchParams;
+  const { tab, semesterId } = await searchParams;
 
   const teacher = await prisma.teacher.findUnique({
     where: {
@@ -97,19 +97,32 @@ export default async function HomeroomSectionPage({
     notFound();
   }
 
-  const currentSemester = await prisma.semester.findFirst({
-    where: {
-      schoolYearId: section.schoolYearId,
-      isCurrent: true,
-    },
-    select: {
-      id: true,
-      isLocked: true,
-    },
-  });
+  const selectedSemester = semesterId
+    ? await prisma.semester.findFirst({
+        where: {
+          id: semesterId,
+          schoolYearId: section.schoolYearId,
+        },
+        select: {
+          id: true,
+          isLocked: true,
+        },
+      })
+    : await prisma.semester.findFirst({
+        where: {
+          schoolYearId: section.schoolYearId,
+          isCurrent: true,
+        },
+        select: {
+          id: true,
+          isLocked: true,
+        },
+      });
 
-  const isCurrentSemesterLocked =
-    currentSemester?.isLocked ?? false;
+  const selectedSemesterId = selectedSemester?.id ?? null;
+
+  const isSelectedSemesterLocked =
+    selectedSemester?.isLocked ?? true;
 
   const isAnnouncementsTab = tab === "announcements";
 
@@ -159,7 +172,8 @@ export default async function HomeroomSectionPage({
             <AnnouncementForm
               sectionId={section.id}
               sectionName={`Grade ${section.grade.level}${section.label}`}
-              isLocked={isCurrentSemesterLocked}
+              semesterId={selectedSemesterId}
+              isLocked={isSelectedSemesterLocked}
             />
           </div>
         </section>
@@ -404,5 +418,6 @@ export default async function HomeroomSectionPage({
     </div>
   );
 }
+
 
 
