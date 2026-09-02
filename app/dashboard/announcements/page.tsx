@@ -198,6 +198,78 @@ export default async function AnnouncementsPage({
           },
         },
       });
+  } else if (role === "TEACHER") {
+    /*
+     * Teachers see:
+     * - school-wide announcements
+     * - announcements for their homeroom section
+     */
+    const teacher = await prisma.teacher.findUnique({
+      where: {
+        userId: session.user.id,
+      },
+      select: {
+        homeroomSections: {
+          where: {
+            schoolYearId: selectedSchoolYearId,
+          },
+          select: {
+            id: true,
+          },
+          take: 1,
+        },
+      },
+    });
+
+    const homeroomSectionId =
+      teacher?.homeroomSections[0]?.id;
+
+    announcements =
+      await prisma.announcement.findMany({
+        where: {
+          OR: [
+            {
+              scope: "SCHOOL_WIDE",
+            },
+            ...(homeroomSectionId
+              ? [
+                  {
+                    scope: "SECTION" as const,
+                    sectionId: homeroomSectionId,
+                  },
+                ]
+              : []),
+          ],
+          schoolYearId: selectedSchoolYearId,
+          semesterId: selectedSemesterId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          section: {
+            include: {
+              grade: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              role: true,
+              adminProfile: {
+                select: {
+                  fullName: true,
+                },
+              },
+              teacherProfile: {
+                select: {
+                  fullName: true,
+                },
+              },
+            },
+          },
+        },
+      });
   } else {
     /*
      * Students see:
@@ -319,10 +391,10 @@ export default async function AnnouncementsPage({
           <span className="font-semibold text-slate-700">
             Selected:
           </span>{" "}
-          {selectedSchoolYear.label} — {selectedSemester.name}
+          {selectedSchoolYear.label} â€” {selectedSemester.name}
         </div>
       </section>
-      {canPostAnnouncement && (
+      {role === "ADMIN" && (
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-slate-900">
@@ -330,7 +402,7 @@ export default async function AnnouncementsPage({
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              {role === "TEACHER" ? "Send an announcement to your homeroom section." : "Create an announcement for the school, a grade, or a section."}
+              Create an announcement for the school, a grade, or a section.
             </p>
           </div>
 
@@ -407,7 +479,7 @@ export default async function AnnouncementsPage({
                   )}
                 </span>
 
-                <span>•</span>
+                <span>â€¢</span>
 
                 <span>
                   {announcement.scope
@@ -420,7 +492,7 @@ export default async function AnnouncementsPage({
 
                 {announcement.createdBy && (
                   <>
-                    <span>•</span>
+                    <span>â€¢</span>
 
                     <span>
                       Posted by{" "}
@@ -429,7 +501,7 @@ export default async function AnnouncementsPage({
                         announcement.createdBy.role}
                     </span>
 
-                    <span>•</span>
+                    <span>â€¢</span>
 
                     <span>
                       {announcement.createdBy.role === "TEACHER"
@@ -443,7 +515,7 @@ export default async function AnnouncementsPage({
 
                 {announcement.section && (
                   <>
-                    <span>•</span>
+                    <span>â€¢</span>
 
                     <span>
                       Grade{" "}
