@@ -1,4 +1,4 @@
-import { auth } from "@/auth";
+import { auth } from "./auth";
 import { NextResponse } from "next/server";
 
 export default auth((req) => {
@@ -18,9 +18,6 @@ if (!isLoggedIn && pathname.startsWith("/dashboard")) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
     if (pathname.startsWith("/dashboard/teacher") && role !== "TEACHER") {
-      return NextResponse.redirect(new URL("/unauthorized", req.url));
-    }
-    if (pathname.startsWith("/dashboard/parent") && role !== "PARENT") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
   }

@@ -1,47 +1,51 @@
-import { prisma } from "@/lib/prisma";
-import { sendSms } from "@/lib/sms";
+﻿import { prisma } from "@/lib/prisma";
 
 export async function notifyUser({
   userId,
   title,
   message,
   announcementId,
+  sectionId,
 }: {
   userId: string;
   title: string;
   message: string;
   announcementId?: string;
+  sectionId?: string;
 }) {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+
   if (!user) return;
 
-  const notification = await prisma.notification.create({
-    data: {
-      userId,
-      channel: "SMS",
-      status: "PENDING",
-      title,
-      message,
-      announcementId,
-    },
-  });
+  /*
+   * If this notification belongs to an announcement,
+   * copy the announcement's exact School Year and Semester.
+   *
+   * This guarantees that the recipient notification keeps
+   * the same academic context as the announcement itself.
+   */
+  let schoolYearId: string | undefined;
+  let semesterId: string | undefined;
 
-  if (!user.phone) {
-    await prisma.notification.update({
-      where: { id: notification.id },
-      data: { status: "FAILED", error: "No phone number on file." },
+  if (announcementId) {
+    const announcement = await prisma.announcement.findUnique({
+      where: {
+        id: announcementId,
+      },
+      select: {
+        schoolYearId: true,
+        semesterId: true,
+      },
     });
-    return;
+
+    if (announcement) {
+      schoolYearId = announcement.schoolYearId;
+      semesterId = announcement.semesterId;
+    }
   }
-
-  const result = await sendSms(user.phone, message);
-
-  await prisma.notification.update({
-    where: { id: notification.id },
-    data: result.success
-      ? { status: "SENT", sentAt: new Date() }
-      : { status: "FAILED", error: result.error },
-  });
 
   await prisma.notification.create({
     data: {
@@ -52,6 +56,9 @@ export async function notifyUser({
       title,
       message,
       announcementId,
+      sectionId,
+      schoolYearId,
+      semesterId,
     },
   });
 }
@@ -60,9 +67,18 @@ export async function notifyMultipleUsers(
   userIds: string[],
   title: string,
   message: string,
-  announcementId?: string
+  announcementId?: string,
+  sectionId?: string
 ) {
   await Promise.all(
-    userIds.map((userId) => notifyUser({ userId, title, message, announcementId }))
+    userIds.map((userId) =>
+      notifyUser({
+        userId,
+        title,
+        message,
+        announcementId,
+        sectionId,
+      })
+    )
   );
 }

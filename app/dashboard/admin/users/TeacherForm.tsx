@@ -10,7 +10,7 @@ export default function TeacherForm() {
   const [state, formAction, isPending] = useActionState(
     async (_prevState: FormState, formData: FormData) => {
       const result = await createTeacher(formData);
-      return { error: result?.error, success: !!result?.success };
+      return { error: result?.error, success: !!result?.success, loginId: result?.teacherLoginId } as any;
     },
     initialState
   );
@@ -24,13 +24,13 @@ export default function TeacherForm() {
       )}
       {state.success && (
         <p className="rounded bg-green-50 px-3 py-2 text-sm text-green-700 md:col-span-2">
-          Teacher created successfully.
+          Teacher created successfully. Login ID: {/** @ts-ignore */ (state as any).loginId}
         </p>
       )}
       <input name="fullName" placeholder="Full name" required className="rounded border px-3 py-2" />
       <input name="email" type="email" placeholder="Email" required className="rounded border px-3 py-2" />
       <input name="phone" placeholder="Phone (optional)" className="rounded border px-3 py-2" />
-      <input name="password" type="password" placeholder="Temporary password" required minLength={8} className="rounded border px-3 py-2" />
+      
       <button disabled={isPending} className="rounded bg-slate-800 px-4 py-2 text-white md:col-span-2 disabled:opacity-50">
         {isPending ? "Creating..." : "Create Teacher"}
       </button>

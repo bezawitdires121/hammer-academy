@@ -1,22 +1,42 @@
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
-export class UnauthorizedError extends Error {
-  constructor(message = "Unauthorized") {
-    super(message);
-    this.name = "UnauthorizedError";
-  }
-}
+export type AppRole = "ADMIN" | "TEACHER" | "STUDENT" | "LIBRARIAN" | "HEALTH";
 
-export async function requireRole(allowedRoles: string[]) {
+export async function requireAuth() {
   const session = await auth();
 
-  if (!session?.user) {
-    throw new UnauthorizedError("Not logged in");
+  if (!session?.user?.id || !session.user.role) {
+    redirect("/login");
   }
 
-  if (!allowedRoles.includes(session.user.role)) {
-    throw new UnauthorizedError("Insufficient permissions");
+  return session;
+}
+
+export async function requireRole(
+  allowedRoles: AppRole | AppRole[]
+) {
+  const session = await requireAuth();
+
+  const allowed = Array.isArray(allowedRoles)
+    ? allowedRoles
+    : [allowedRoles];
+
+  if (!allowed.includes(session.user.role as AppRole)) {
+    redirect("/unauthorized");
   }
 
-  return session.user;
+  return session;
+}
+
+export async function requireAdmin() {
+  return requireRole("ADMIN");
+}
+
+export async function requireTeacher() {
+  return requireRole("TEACHER");
+}
+
+export async function requireStudent() {
+  return requireRole("STUDENT");
 }

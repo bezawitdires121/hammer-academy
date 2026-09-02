@@ -1,3 +1,4 @@
+import { formatEthiopianDisplay } from "@/lib/ethiopian-calendar";
 import { prisma } from "@/lib/prisma";
 
 export default async function AuditLogPage() {
@@ -29,9 +30,9 @@ export default async function AuditLogPage() {
             {logs.map((log: (typeof logs)[number]) => (
               <tr key={log.id} className="border-b">
                 <td className="px-4 py-2 whitespace-nowrap text-gray-500">
-                  {log.createdAt.toLocaleString()}
+                  {formatEthiopianDisplay(log.createdAt)}
                 </td>
-                <td className="px-4 py-2">{log.user.email}</td>
+                <td className="px-4 py-2">{log.user?.email || "Deleted user"}</td>
                 <td className="px-4 py-2">
                   <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
                     {log.action}
@@ -51,3 +52,4 @@ export default async function AuditLogPage() {
     </div>
   );
 }
+

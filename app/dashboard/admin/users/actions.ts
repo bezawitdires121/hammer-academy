@@ -6,36 +6,45 @@ import { requireRole } from "@/lib/auth-guard";
 import { logAction } from "@/lib/audit";
 import {
   createTeacherSchema,
-  createParentSchema,
   createClassSchema,
   createStudentSchema,
   editStudentSchema,
   editClassSchema,
 } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
+import { put } from "@vercel/blob";
+import { regenerateClassNumbers } from "@/lib/class-number";
 
 export async function createTeacher(formData: FormData) {
   const admin = await requireRole(["ADMIN"]);
 
   const parsed = createTeacherSchema.safeParse({
     fullName: formData.get("fullName"),
-    email: formData.get("email"),
+    email: formData.get("email") || undefined,
     phone: formData.get("phone") || undefined,
-    password: formData.get("password"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { fullName, email, phone, password } = parsed.data;
+  const { fullName, email, phone } = parsed.data;
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return { error: "A user with this email already exists." };
+  if (email) {
+    const existing = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existing) {
+      return { error: "A user with this email already exists." };
+    }
   }
 
-  const passwordHash = await hashPassword(password);
+  const makeId = () =>
+    Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  const teacherLoginId = `TCH-${makeId()}`;
+  const passwordHash = await hashPassword(teacherLoginId);
 
   const user = await prisma.user.create({
     data: {
@@ -43,206 +52,255 @@ export async function createTeacher(formData: FormData) {
       phone,
       passwordHash,
       role: "TEACHER",
-      teacherProfile: { create: { fullName } },
+      teacherProfile: {
+        create: {
+          fullName,
+          teacherLoginId,
+        },
+      },
     },
   });
 
-  await logAction(admin.id, "TEACHER_CREATED", "User", user.id, { email });
-  revalidatePath("/dashboard/admin/users");
-  return { success: true };
-}
-
-export async function createParent(formData: FormData) {
-  const admin = await requireRole(["ADMIN"]);
-
-  const parsed = createParentSchema.safeParse({
-    fullName: formData.get("fullName"),
-    email: formData.get("email"),
-    phone: formData.get("phone"),
-    password: formData.get("password"),
+  await logAction(admin.user.id, "TEACHER_CREATED", "User", user.id, {
+    email,
+    teacherLoginId,
   });
 
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  const { fullName, email, phone, password } = parsed.data;
-
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return { error: "A user with this email already exists." };
-  }
-
-  const passwordHash = await hashPassword(password);
-
-  const user = await prisma.user.create({
-    data: {
-      email,
-      phone,
-      passwordHash,
-      role: "PARENT",
-      parentProfile: { create: { fullName } },
-    },
-  });
-
-  await logAction(admin.id, "PARENT_CREATED", "User", user.id, { email });
   revalidatePath("/dashboard/admin/users");
-  return { success: true };
+
+  return { success: true, teacherLoginId };
 }
 
 export async function createClass(formData: FormData) {
-  const admin = await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN"]);
 
-  const parsed = createClassSchema.safeParse({
-    name: formData.get("name"),
-    grade: Number(formData.get("grade")),
-    teacherId: formData.get("teacherId") || undefined,
-  });
-
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-const existingClass = await prisma.class.findFirst({
-    where: { name: parsed.data.name, grade: parsed.data.grade },
-  });
-  if (existingClass) {
-    return { error: "A class with this name and grade already exists." };
-  }
-  const newClass = await prisma.class.create({ data: parsed.data });
-
-  await logAction(admin.id, "CLASS_CREATED", "Class", newClass.id, {
-    name: newClass.name,
-  });
-  revalidatePath("/dashboard/admin/users");
-  return { success: true };
+  return {
+    error:
+      "Class creation is removed; create Sections under School Years instead.",
+  };
 }
 
 export async function createStudent(formData: FormData) {
   const admin = await requireRole(["ADMIN"]);
 
+  const photo = formData.get("photo") as File | null;
+
+  if (!photo || photo.size === 0) {
+    return { error: "Please upload the student's photo." };
+  }
+
+  if (photo.size > 5 * 1024 * 1024) {
+    return { error: "Student photo must be under 5MB." };
+  }
+
+  if (!photo.type.startsWith("image/")) {
+    return { error: "Please upload a valid student image." };
+  }
+
   const parsed = createStudentSchema.safeParse({
     fullName: formData.get("fullName"),
-    admissionNo: formData.get("admissionNo"),
-    classId: formData.get("classId"),
-    parentId: formData.get("parentId"),
+    sectionId: formData.get("sectionId"),
+    gender: formData.get("gender"),
+    age: formData.get("age"),
+    dateOfBirth: formData.get("dateOfBirth"),
+    parentFullName: formData.get("parentFullName"),
+    parentPhone: formData.get("parentPhone"),
+    parentRelationship: formData.get("parentRelationship"),
+    parentEmail: formData.get("parentEmail") || undefined,
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { fullName, admissionNo, classId, parentId } = parsed.data;
+  const {
+    fullName,
+    sectionId,
+    gender,
+    age,
+    dateOfBirth,
+    parentFullName,
+    parentPhone,
+    parentRelationship,
+    parentEmail,
+  } = parsed.data;
 
-  const existing = await prisma.student.findUnique({ where: { admissionNo } });
-  if (existing) {
-    return { error: "A student with this admission number already exists." };
+  const currentYear = await prisma.schoolYear.findFirst({
+    where: { isCurrent: true },
+  });
+
+  if (!currentYear) {
+    return { error: "No current school year configured." };
   }
 
-  const student = await prisma.student.create({
+  const section = await prisma.section.findUnique({
+    where: { id: sectionId },
+  });
+
+  if (!section) {
+    return { error: "Selected section was not found." };
+  }
+
+  const blob = await put(`students/${Date.now()}-${photo.name}`, photo, {
+    access: "public",
+  });
+
+  const makeId = () =>
+    Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  const studentLoginId = `STU-${makeId()}`;
+  const passwordHash = await hashPassword(studentLoginId);
+
+  const user = await prisma.user.create({
     data: {
-      fullName,
-      admissionNo,
-      classId,
-      parents: { create: { parentId } },
+      passwordHash,
+      role: "STUDENT",
     },
   });
 
-  await logAction(admin.id, "STUDENT_CREATED", "Student", student.id, {
-    admissionNo,
+  const student = await prisma.student.create({
+    data: {
+      userId: user.id,
+      fullName,
+      studentLoginId,
+      photoUrl: blob.url,
+      gender,
+      age,
+      dateOfBirth,
+      currentSectionId: sectionId,
+    },
   });
+
+  await prisma.studentEnrollment.create({
+    data: {
+      studentId: student.id,
+      schoolYearId: currentYear.id,
+      sectionId,
+      status: "ACTIVE",
+    },
+  });
+
+  // Regenerate Class Numbers for the section after adding this student.
+  await regenerateClassNumbers(sectionId);
+
+  await prisma.studentParentContact.create({
+    data: {
+      studentId: student.id,
+      fullName: parentFullName,
+      phone: parentPhone,
+      email: parentEmail || null,
+      relationship: parentRelationship,
+    },
+  });
+
+  await logAction(admin.user.id, "STUDENT_CREATED", "Student", student.id, {
+    studentLoginId,
+    sectionId,
+  });
+
   revalidatePath("/dashboard/admin/users");
-  return { success: true };
+  revalidatePath("/dashboard/admin/students");
+
+  return { success: true, studentLoginId };
 }
 
 export async function assignTeacherToClass(formData: FormData) {
   const admin = await requireRole(["ADMIN"]);
 
-  const classId = formData.get("classId") as string;
+  const sectionId = formData.get("classId") as string;
   const teacherId = formData.get("teacherId") as string;
 
-  if (!classId) {
-    return { error: "No class specified." };
+  if (!sectionId) {
+    return { error: "No section specified." };
   }
 
-  const targetClass = await prisma.class.findUnique({ where: { id: classId } });
-  if (!targetClass) {
-    return { error: "Class not found." };
-  }
-
-  await prisma.class.update({
-    where: { id: classId },
-    // Empty string from the "Unassign" option means null — this lets an
-    // admin deliberately remove a teacher from a class, not just add one
-    data: { teacherId: teacherId || null },
+  const section = await prisma.section.findUnique({
+    where: { id: sectionId },
   });
 
-  await logAction(admin.id, "CLASS_TEACHER_ASSIGNED", "Class", classId, {
+  if (!section) {
+    return { error: "Section not found." };
+  }
+
+  await prisma.section.update({
+    where: { id: sectionId },
+    data: {
+      homeroomTeacherId: teacherId || null,
+    },
+  });
+
+  await logAction(admin.user.id, "HOMEROOM_ASSIGNED", "Section", sectionId, {
     teacherId: teacherId || null,
   });
 
   revalidatePath("/dashboard/admin/users");
+  revalidatePath("/dashboard/admin/grades");
+  revalidatePath("/dashboard/admin/sections");
+
   return { success: true };
 }
+
 export async function editStudent(formData: FormData) {
   const admin = await requireRole(["ADMIN"]);
 
   const parsed = editStudentSchema.safeParse({
     studentId: formData.get("studentId"),
     fullName: formData.get("fullName"),
-    admissionNo: formData.get("admissionNo"),
-    classId: formData.get("classId"),
+    sectionId: formData.get("sectionId"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
   }
 
-  const { studentId, fullName, admissionNo, classId } = parsed.data;
+  const { studentId, fullName, sectionId } = parsed.data;
 
-  const duplicate = await prisma.student.findFirst({
-    where: { admissionNo, NOT: { id: studentId } },
+  // Capture the old section before updating so we can regenerate its class numbers.
+  const oldEnrollment = await prisma.studentEnrollment.findFirst({
+    where: { studentId, status: "ACTIVE" },
+    select: { sectionId: true },
   });
-  if (duplicate) {
-    return { error: "Another student already has this admission number." };
-  }
+  const oldSectionId = oldEnrollment?.sectionId ?? null;
 
   await prisma.student.update({
     where: { id: studentId },
-    data: { fullName, admissionNo, classId },
+    data: {
+      fullName,
+      currentSectionId: sectionId,
+    },
   });
 
-  await logAction(admin.id, "STUDENT_EDITED", "Student", studentId, { fullName, admissionNo });
+  // If the section changed, update the enrollment row and regenerate both sections.
+  if (sectionId && oldSectionId && oldSectionId !== sectionId) {
+    await prisma.studentEnrollment.updateMany({
+      where: { studentId, status: "ACTIVE" },
+      data: { sectionId },
+    });
+    await regenerateClassNumbers(oldSectionId);
+    await regenerateClassNumbers(sectionId);
+  } else if (sectionId) {
+    // Name may have changed — regenerate the current section.
+    await regenerateClassNumbers(sectionId);
+  }
+
+  await logAction(admin.user.id, "STUDENT_EDITED", "Student", studentId, {
+    fullName,
+    sectionId,
+  });
+
   revalidatePath("/dashboard/admin/users");
+  revalidatePath("/dashboard/admin/students");
+  revalidatePath(`/dashboard/admin/students/${studentId}`);
+
   return { success: true };
 }
 
 export async function editClass(formData: FormData) {
-  const admin = await requireRole(["ADMIN"]);
+  await requireRole(["ADMIN"]);
 
-  const parsed = editClassSchema.safeParse({
-    classId: formData.get("classId"),
-    name: formData.get("name"),
-    grade: Number(formData.get("grade")),
-  });
-
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0].message };
-  }
-
-  const { classId, name, grade } = parsed.data;
-
-  const duplicate = await prisma.class.findFirst({
-    where: { name, grade, NOT: { id: classId } },
-  });
-  if (duplicate) {
-    return { error: "A class with this name and grade already exists." };
-  }
-
-  await prisma.class.update({ where: { id: classId }, data: { name, grade } });
-
-  await logAction(admin.id, "CLASS_EDITED", "Class", classId, { name, grade });
-  revalidatePath("/dashboard/admin/users");
-  return { success: true };
+  return {
+    error: "Class editing removed. Use Section management instead.",
+  };
 }
 
 export async function toggleUserActive(formData: FormData) {
@@ -251,17 +309,23 @@ export async function toggleUserActive(formData: FormData) {
   const userId = formData.get("userId") as string;
   const isActive = formData.get("isActive") === "true";
 
-  if (!userId) return { error: "No user specified." };
-
-  // Prevent an admin from locking themselves out
-  if (userId === admin.id && !isActive) {
-    return { error: "You cannot deactivate your own account." };
+  if (!userId) {
+    return { error: "No user specified." };
   }
 
-  await prisma.user.update({ where: { id: userId }, data: { isActive } });
+  if (userId === admin.user.id && !isActive) {
+    return {
+      error: "You cannot deactivate your own account.",
+    };
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { isActive },
+  });
 
   await logAction(
-    admin.id,
+    admin.user.id,
     isActive ? "USER_REACTIVATED" : "USER_DEACTIVATED",
     "User",
     userId,
@@ -269,38 +333,60 @@ export async function toggleUserActive(formData: FormData) {
   );
 
   revalidatePath("/dashboard/admin/users");
+
   return { success: true };
 }
+
 export async function assignSubjectTeacher(formData: FormData) {
   const admin = await requireRole(["ADMIN"]);
 
-  const classId = formData.get("classId") as string;
+  const sectionId = formData.get("classId") as string;
   const subjectId = formData.get("subjectId") as string;
   const teacherId = formData.get("teacherId") as string;
 
-  if (!classId || !subjectId) {
-    return { error: "Class and subject are required." };
+  if (!sectionId || !subjectId) {
+    return {
+      error: "Section and subject are required.",
+    };
   }
 
   if (!teacherId) {
-    // Empty selection means "unassign" — delete the row if it exists
-    await prisma.classSubjectTeacher.deleteMany({ where: { classId, subjectId } });
-    await logAction(admin.id, "SUBJECT_TEACHER_UNASSIGNED", "Class", classId, { subjectId });
+    await prisma.teacherAssignment.deleteMany({
+      where: { sectionId, subjectId },
+    });
+
+    await logAction(
+      admin.user.id,
+      "TEACHER_UNASSIGNED",
+      "TeacherAssignment",
+      sectionId,
+      { subjectId }
+    );
+
     revalidatePath("/dashboard/admin/users");
+    revalidatePath("/dashboard/admin/grades");
+    revalidatePath("/dashboard/admin/sections");
+
     return { success: true };
   }
 
-  await prisma.classSubjectTeacher.upsert({
-    where: { classId_subjectId: { classId, subjectId } },
+  await prisma.teacherAssignment.upsert({
+    where: { sectionId_subjectId: { sectionId, subjectId } },
     update: { teacherId },
-    create: { classId, subjectId, teacherId },
+    create: { sectionId, subjectId, teacherId },
   });
 
-  await logAction(admin.id, "SUBJECT_TEACHER_ASSIGNED", "Class", classId, {
-    subjectId,
-    teacherId,
-  });
+  await logAction(
+    admin.user.id,
+    "TEACHER_ASSIGNED",
+    "TeacherAssignment",
+    sectionId,
+    { subjectId, teacherId }
+  );
 
   revalidatePath("/dashboard/admin/users");
+  revalidatePath("/dashboard/admin/grades");
+  revalidatePath("/dashboard/admin/sections");
+
   return { success: true };
 }

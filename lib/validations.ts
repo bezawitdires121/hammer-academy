@@ -1,19 +1,13 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import { normalizePhone } from "@/lib/phone";
 
 export const createTeacherSchema = z.object({
   fullName: z.string().min(2).max(100),
-  email: z.string().email(),
+  email: z.string().email().optional(),
   phone: z.string().min(9).max(15).optional().transform((p) => (p ? normalizePhone(p) : p)),
-  password: z.string().min(8).max(72),
 });
 
-export const createParentSchema = z.object({
-  fullName: z.string().min(2).max(100),
-  email: z.string().email(),
-  phone: z.string().min(9).max(15).transform(normalizePhone),
-  password: z.string().min(8).max(72),
-});
+
 
 export const createClassSchema = z.object({
   name: z.string().min(1).max(50),
@@ -22,11 +16,16 @@ export const createClassSchema = z.object({
 });
 
 export const createStudentSchema = z.object({
-  fullName: z.string().min(2).max(100),
-  admissionNo: z.string().min(1).max(30),
-  classId: z.string().min(1),
-  parentId: z.string().min(1),
-});
+    fullName: z.string().min(2).max(100),
+    sectionId: z.string().min(1),
+    gender: z.enum(["MALE", "FEMALE"]),
+    age: z.coerce.number().int().min(1).max(100),
+    dateOfBirth: z.coerce.date(),
+    parentFullName: z.string().min(2).max(100),
+    parentPhone: z.string().min(9).max(15).transform((p) => normalizePhone(p)),
+    parentRelationship: z.string().min(2).max(50),
+    parentEmail: z.string().email().optional(),
+  });
 export const createResultSchema = z.object({
   studentId: z.string().min(1),
   subjectId: z.string().min(1),
@@ -37,9 +36,11 @@ export const createResultSchema = z.object({
 export const createAnnouncementSchema = z.object({
   title: z.string().min(2).max(150),
   body: z.string().min(2).max(2000),
-  scope: z.enum(["SCHOOL_WIDE", "GRADE", "CLASS"]),
+  scope: z.enum(["SCHOOL_WIDE", "GRADE", "SECTION"]),
   classId: z.string().optional(),
-  grade: z.number().int().min(1).max(5).optional(),
+  grade: z.number().int().min(0).max(8).optional(),
+  schoolYearId: z.string().min(1),
+  semesterId: z.string().min(1),
   priority: z.boolean().default(false),
 });
 export const createIssueSchema = z.object({
@@ -61,8 +62,7 @@ export const resetPasswordSchema = z.object({
 export const editStudentSchema = z.object({
   studentId: z.string().min(1),
   fullName: z.string().min(2).max(100),
-  admissionNo: z.string().min(1).max(30),
-  classId: z.string().min(1),
+  sectionId: z.string().min(1),
 });
 
 export const editClassSchema = z.object({
@@ -87,3 +87,35 @@ export const submitResultCardSchema = z.object({
     })
   ).min(1),
 });
+export const teacherApplicationSchema = z.object({
+  fullName: z
+    .string()
+    .min(2, "Please enter your full name.")
+    .max(100),
+
+  email: z
+    .string()
+    .email("Please enter a valid email."),
+
+  phone: z
+    .string()
+    .min(9, "Please enter a valid phone number.")
+    .max(15, "Please enter a valid phone number.")
+    .transform(normalizePhone)
+    .optional(),
+  requestedRole: z.enum(["TEACHER","CLEANER","SECURITY","SECRETARY","LIBRARIAN","HEALTH","OTHER"]).optional(),
+});
+
+export const acceptApplicationSchema = z.object({
+  applicationId: z.string().min(1),
+  password: z.string().min(8).max(72),
+});
+
+export const rejectApplicationSchema = z.object({
+  applicationId: z.string().min(1),
+  reason: z.string().min(2).max(500),
+});
+
+
+
+

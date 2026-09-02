@@ -31,5 +31,7 @@
     "**/*.mts"
   ],
 
-  "exclude": ["node_modules"]
+  "exclude": ["app.backup-student-photos","node_modules"]
 }
+
+
