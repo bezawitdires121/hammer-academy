@@ -6,8 +6,10 @@ import SignaturePad from "@/components/SignaturePad";
 
 type Settings = {
   schoolName: string;
+  schoolNameEnglish: string;
   address: string;
   phone: string;
+  fax: string;
   email: string;
   directorName: string;
   logoUrl: string | null;
@@ -17,8 +19,10 @@ type Settings = {
 
 export default function SettingsForm({ settings }: { settings: Settings }) {
   const [schoolName, setSchoolName] = useState(settings.schoolName);
+  const [schoolNameEnglish, setSchoolNameEnglish] = useState(settings.schoolNameEnglish ?? "");
   const [address, setAddress] = useState(settings.address);
   const [phone, setPhone] = useState(settings.phone);
+  const [fax, setFax] = useState(settings.fax ?? "");
   const [email, setEmail] = useState(settings.email);
   const [directorName, setDirectorName] = useState(settings.directorName);
   const [logo, setLogo] = useState<File | null>(null);
@@ -63,8 +67,10 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
     setSuccess(false);
     const fd = new FormData();
     fd.set("schoolName", schoolName);
+    fd.set("schoolNameEnglish", schoolNameEnglish);
     fd.set("address", address);
     fd.set("phone", phone);
+    fd.set("fax", fax);
     fd.set("email", email);
     fd.set("directorName", directorName);
     if (logo) fd.set("logo", logo);
@@ -97,10 +103,21 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700">School Name</label>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">School Name (Amharic)</label>
             <input
               value={schoolName}
               onChange={(e) => setSchoolName(e.target.value)}
+              placeholder="ሌቭል አፕ ኢንተርናሽናል ኃላፊነቱ የተወሰነ የግል ማህበር"
+              required
+              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">School Name (English)</label>
+            <input
+              value={schoolNameEnglish}
+              onChange={(e) => setSchoolNameEnglish(e.target.value)}
+              placeholder="LEVEL UP INTERNATIONAL P.L.C. A.D.M No. 1"
               required
               className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
             />
@@ -120,6 +137,15 @@ export default function SettingsForm({ settings }: { settings: Settings }) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="09XXXXXXXX"
+              className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-700">Fax</label>
+            <input
+              value={fax}
+              onChange={(e) => setFax(e.target.value)}
+              placeholder="(058) 220 25 50"
               className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/10"
             />
           </div>

@@ -771,8 +771,10 @@ model DocumentTemplate {
 model SchoolSettings {
   id                   Int      @id @default(1)
   schoolName           String   @default("Hammer Academy")
+  schoolNameEnglish    String   @default("")
   address              String   @default("")
   phone                String   @default("")
+  fax                  String   @default("")
   email                String   @default("")
   logoUrl              String?
   stampUrl             String?

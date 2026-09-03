@@ -1,4 +1,4 @@
-import { requireTeacher } from "@/lib/auth-guard";
+﻿import { requireTeacher } from "@/lib/auth-guard";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -593,25 +593,60 @@ export default async function CertificatePage({
             Arial,
             sans-serif;
         }
-
         .certificate-header {
-          text-align: center;
-          border-bottom: 2px solid #000;
-          padding-bottom: 15px;
-          margin-bottom: 25px;
+          border-bottom: 2px solid #0f2a47;
+          padding-bottom: 12px;
+          margin-bottom: 20px;
+        }
+
+        .certificate-school-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .certificate-school-logo {
+          width: 60px;
+          height: 60px;
+          object-fit: contain;
+          flex-shrink: 0;
+        }
+
+        .certificate-school-logo-placeholder {
+          width: 60px;
+          height: 60px;
+          border: 2px solid #0f2a47;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 8px;
+          font-weight: bold;
+          color: #0f2a47;
+          flex-shrink: 0;
         }
 
         .school-name-am {
-          font-size: 24px;
-          font-weight: bold;
+          font-size: 20px;
+          font-weight: 800;
+          line-height: 1.25;
+          text-transform: uppercase;
+          letter-spacing: 0.4px;
+          color: #0f2a47;
           margin: 0;
         }
 
         .school-name-en {
-          font-size: 16px;
-          font-weight: bold;
-          margin: 5px 0;
-          letter-spacing: 1px;
+          font-size: 10px;
+          font-weight: 600;
+          color: #6b7280;
+          margin-top: 4px;
+          letter-spacing: 0;
+        }
+
+        .certificate-school-contact {
+          font-size: 9px;
+          color: #6b7280;
+          margin-top: 5px;
         }
 
         .certificate-title-am {
@@ -716,7 +751,7 @@ export default async function CertificatePage({
 
               <p className="mt-1 text-sm text-slate-500">
                 Grade {section.grade.level}
-                {section.label} •{" "}
+                {section.label} â€¢{" "}
                 {section.schoolYear.label}
               </p>
 
@@ -830,12 +865,40 @@ export default async function CertificatePage({
 
                 <div className="certificate-header">
 
-                  <h1 className="school-name-am">
-                    LEVEL UP ACADEMY
-                  </h1>
+                  <div className="certificate-school-row">
 
-                  <div className="school-name-en">
-                    LEVEL UP ACADEMY
+                    {schoolSettings?.logoUrl ? (
+                      <img
+                        src={schoolSettings.logoUrl}
+                        alt={schoolSettings.schoolName || "School logo"}
+                        className="certificate-school-logo"
+                      />
+                    ) : (
+                      <div className="certificate-school-logo-placeholder">
+                        LOGO
+                      </div>
+                    )}
+
+                    <div>
+                      <h1 className="school-name-am">
+                        {schoolSettings?.schoolName || "LEVEL UP ACADEMY"}
+                      </h1>
+
+                      <div className="school-name-en">
+                        QUALITY EDUCATION • DISCIPLINE • EXCELLENCE
+                      </div>
+
+                      <div className="certificate-school-contact">
+                        {[
+                          schoolSettings?.address,
+                          schoolSettings?.phone,
+                          schoolSettings?.email,
+                        ]
+                          .filter(Boolean)
+                          .join("  •  ")}
+                      </div>
+                    </div>
+
                   </div>
 
                   <div className="certificate-title-am">
@@ -991,4 +1054,5 @@ export default async function CertificatePage({
     </>
   );
 }
+
 

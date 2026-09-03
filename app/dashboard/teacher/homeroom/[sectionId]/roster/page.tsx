@@ -1,4 +1,4 @@
-﻿// app/dashboard/teacher/homeroom/[sectionId]/roster/page.tsx
+// app/dashboard/teacher/homeroom/[sectionId]/roster/page.tsx
 
 import { requireTeacher } from "@/lib/auth-guard";
 import { teacherIsHomeroomTeacher } from "@/lib/teacher-access";
@@ -794,10 +794,35 @@ export default async function RosterPage({ params }: Props) {
            */
 
           .report-header {
-            text-align: center;
-            border-bottom: 2px solid black;
-            padding-bottom: 9px;
+            border-bottom: 2px solid #0f2a47;
+            padding-bottom: 12px;
             margin-bottom: 13px;
+          }
+
+          .report-school-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+          }
+
+          .report-school-logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            flex-shrink: 0;
+          }
+
+          .report-school-logo-placeholder {
+            width: 60px;
+            height: 60px;
+            border: 2px solid #0f2a47;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: bold;
+            color: #0f2a47;
+            flex-shrink: 0;
           }
 
           .school-name-am {
@@ -807,27 +832,35 @@ export default async function RosterPage({ params }: Props) {
               Arial,
               sans-serif;
 
-            font-size: 17px;
-            font-weight: bold;
-            line-height: 1.4;
-            margin-bottom: 2px;
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1.25;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #0f2a47;
           }
 
           .school-name-en {
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #6b7280;
+            margin-top: 4px;
           }
 
           .school-address {
-            font-size: 11px;
-            margin-bottom: 5px;
+            font-size: 9px;
+            color: #6b7280;
+            margin-top: 5px;
           }
 
           .report-title {
+            text-align: center;
             font-size: 15px;
-            font-weight: bold;
-            margin-top: 7px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #0f2a47;
+            margin-top: 12px;
           }
 
           /*
@@ -922,8 +955,8 @@ export default async function RosterPage({ params }: Props) {
            */
 
           .stamp-box {
-            width: 92px;
-            height: 92px;
+            width: 70px;
+            height: 70px;
 
             border: 3px solid black;
             border-radius: 50%;
@@ -1045,12 +1078,12 @@ export default async function RosterPage({ params }: Props) {
               href={`/dashboard/teacher/homeroom/${sectionId}`}
               className="text-lg text-slate-600 hover:text-slate-950"
             >
-              ←
+              â†
             </Link>
 
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Homeroom · View Results
+                Homeroom Â· View Results
               </p>
 
               <h1 className="mt-1 text-2xl font-bold text-slate-950">
@@ -1059,7 +1092,7 @@ export default async function RosterPage({ params }: Props) {
 
               <p className="mt-1 text-sm text-slate-500">
                 Grade {section.grade.level}
-                {section.label} ·{" "}
+                {section.label} Â·{" "}
                 {section.schoolYear.label}
               </p>
             </div>
@@ -1489,26 +1522,39 @@ export default async function RosterPage({ params }: Props) {
               <div className="report-page">
 
                 {/* HEADER */}
-
                 <div className="report-header">
-                  <div className="school-name-am">
-                    LEVEL UP ACADEMY
-                  </div>
+  <div className="report-school-row">
+    {schoolSettings?.logoUrl ? (
+      <img
+        src={schoolSettings.logoUrl}
+        alt={schoolSettings.schoolName || "School logo"}
+        className="report-school-logo"
+      />
+    ) : (
+      <div className="report-school-logo-placeholder">
+        LOGO
+      </div>
+    )}
 
-                  <div className="school-name-en">
-                    Level Up International P.L.C. A.D.M No. 1
-                  </div>
+    <div>
+      <div className="school-name-am">
+        {schoolSettings?.schoolName || schoolName}
+      </div>
 
-                  <div className="school-address">
-                    Phone: (058) 2221788 | Fax: (058) 220 25 50 | Bahir Dar
-                  </div>
+      <div className="school-name-en">
+        {schoolSettings?.schoolNameEnglish || "LEVEL UP INTERNATIONAL P.L.C. A.D.M No. 1"}
+      </div>
 
-                  <div className="report-title">
-                    Student's Report Card
-                  </div>
-                </div>
+      <div className="school-address">
+        Phone: {schoolSettings?.phone || ""} | Fax: {schoolSettings?.fax || ""} | {schoolSettings?.address || "Bahir Dar"}
+      </div>
+    </div>
+  </div>
 
-                {/* STUDENT INFO */}
+  <div className="report-title">
+    የተማሪዎች ውጤት መግለጫ / STUDENT'S REPORT CARD
+  </div>
+</div>{/* STUDENT INFO */}
 
                 <div className="student-info">
                   <div>
@@ -1853,18 +1899,26 @@ export default async function RosterPage({ params }: Props) {
                     =================================================== */}
 
                     <div className="stamp-box">
-                      <div className="stamp-main">
-                        LEVEL UP
-                      </div>
-
-                      <div className="stamp-sub">
-                        ACADEMY
-                      </div>
-
-                      <div className="stamp-sub">
-                        SCHOOL SEAL
-                      </div>
-                    </div>
+  {schoolSettings?.stampUrl ? (
+    <img
+      src={schoolSettings.stampUrl}
+      alt="School stamp"
+      className="relative z-10 h-[70px] w-[70px] object-contain"
+    />
+  ) : (
+    <>
+      <div className="stamp-main">
+        LEVEL UP
+      </div>
+      <div className="stamp-sub">
+        ACADEMY
+      </div>
+      <div className="stamp-sub">
+        SCHOOL SEAL
+      </div>
+    </>
+  )}
+</div>
                   </div>
 
                 </div>
@@ -1879,25 +1933,39 @@ export default async function RosterPage({ params }: Props) {
 
                 {/* HEADER */}
 
-                <div className="report-header">
-                  <div className="school-name-am">
-                    LEVEL UP ACADEMY
-                  </div>
+  <div className="report-header">
+  <div className="report-school-row">
+    {schoolSettings?.logoUrl ? (
+      <img
+        src={schoolSettings.logoUrl}
+        alt={schoolSettings.schoolName || "School logo"}
+        className="report-school-logo"
+      />
+    ) : (
+      <div className="report-school-logo-placeholder">
+        LOGO
+      </div>
+    )}
 
-                  <div className="school-name-en">
-                    Level Up International P.L.C. A.D.M No. 1
-                  </div>
+    <div>
+      <div className="school-name-am">
+        {schoolSettings?.schoolName || schoolName}
+      </div>
 
-                  <div className="school-address">
-                    Phone: (058) 2221788 | Fax: (058) 220 25 50 | Bahir Dar
-                  </div>
+      <div className="school-name-en">
+        {schoolSettings?.schoolNameEnglish || "LEVEL UP INTERNATIONAL P.L.C. A.D.M No. 1"}
+      </div>
 
-                  <div className="report-title">
-                    Student Personal Data &amp; Traits
-                  </div>
-                </div>
+      <div className="school-address">
+        Phone: {schoolSettings?.phone || ""} | Fax: {schoolSettings?.fax || ""} | {schoolSettings?.address || "Bahir Dar"}
+      </div>
+    </div>
+  </div>
 
-                {/* PERSONAL DATA */}
+  <div className="report-title">
+    STUDENT PERSONAL DATA &amp; TRAITS / የተማሪ መረጃ
+  </div>
+</div>
 
                 <div className="traits-info">
                   <div>

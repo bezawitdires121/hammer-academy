@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
@@ -26,8 +26,10 @@ export async function updateSchoolSettings(formData: FormData) {
   }
 
   const schoolName = String(formData.get("schoolName") || "").trim();
+  const schoolNameEnglish = String(formData.get("schoolNameEnglish") || "").trim();
   const address = String(formData.get("address") || "").trim();
   const phone = String(formData.get("phone") || "").trim();
+  const fax = String(formData.get("fax") || "").trim();
   const email = String(formData.get("email") || "").trim();
   const directorName = String(formData.get("directorName") || "").trim();
 
@@ -60,8 +62,28 @@ export async function updateSchoolSettings(formData: FormData) {
 
   await prisma.schoolSettings.upsert({
     where: { id: 1 },
-    create: { schoolName, address, phone, email, directorName, logoUrl, stampUrl },
-    update: { schoolName, address, phone, email, directorName, logoUrl, stampUrl },
+    create: {
+      schoolName,
+      schoolNameEnglish,
+      address,
+      phone,
+      fax,
+      email,
+      directorName,
+      logoUrl,
+      stampUrl,
+    },
+    update: {
+      schoolName,
+      schoolNameEnglish,
+      address,
+      phone,
+      fax,
+      email,
+      directorName,
+      logoUrl,
+      stampUrl,
+    },
   });
 
   revalidatePath("/dashboard/admin/settings");
